@@ -34,6 +34,8 @@ bool tcp_mode::start()
 		if (ec)
 		{
 			std::cerr << "TCP Mode - Listen Address incorrect - " << current_settings.listen_on << "\n";
+			if (!current_settings.log_messages.empty())
+				print_message_to_file("TCP Mode - Listen Address incorrect - " + current_settings.listen_on + "\n", current_settings.log_messages);
 			return false;
 		}
 
@@ -206,7 +208,7 @@ void tcp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 		ss << "TCP Mode - External IPv4 Port: " << ipv4_port << "\n";
 		std::string message = ss.str();
 		if (!current_settings.log_ip_address.empty())
-			asio::post(asio_strand, [message, log_ip_address = current_settings.log_ip_address]() { print_message_to_file(message, log_ip_address); });
+			print_ip_to_file(message, current_settings.log_ip_address);
 		std::cout << message;
 	}
 
@@ -223,7 +225,7 @@ void tcp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 		ss << "TCP Mode - External IPv6 Port: " << ipv6_port << "\n";
 		std::string message = ss.str();
 		if (!current_settings.log_ip_address.empty())
-			asio::post(asio_strand, [message, log_ip_address = current_settings.log_ip_address]() { print_message_to_file(message, log_ip_address); });
+			print_ip_to_file(message, current_settings.log_ip_address);
 		std::cout << message;
 	}
 }

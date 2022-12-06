@@ -1,6 +1,9 @@
 add_subdirectory(shares)
 add_subdirectory(networks)
 
+target_link_libraries(${PROJECT_NAME} PRIVATE SHAREDEFINES)
+target_link_libraries(${PROJECT_NAME} PRIVATE NETCONNECTIONS)
+
 if (WIN32)
 	target_link_libraries(${PROJECT_NAME} PUBLIC wsock32 ws2_32)
 endif()
@@ -8,9 +11,9 @@ if (UNIX)
 	target_link_libraries(${PROJECT_NAME} PUBLIC stdc++)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	target_link_libraries(${PROJECT_NAME} PUBLIC uring)
-endif()
+#if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+#	target_link_libraries(${PROJECT_NAME} PUBLIC uring)
+#endif()
 
 if (${VCPKG_MANIFEST_DIR})
 	find_package(asio CONFIG REQUIRED)
@@ -18,9 +21,6 @@ if (${VCPKG_MANIFEST_DIR})
 else()
 	target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE SHAREDEFINES)
-target_link_libraries(${PROJECT_NAME} PRIVATE NETCONNECTIONS)
 
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")

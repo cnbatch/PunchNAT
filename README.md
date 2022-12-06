@@ -32,8 +32,6 @@ punchnat config1.conf config2.conf
 ```
 
 ### Log 文件
-目前只提供输出 IP 地址到指定 Log 目录的功能。
-
 在首次获取打洞后的 IP 地址与端口后，以及打洞的 IP 地址与端口发生变化后，会向 Log 目录创建 ip_address.txt 文件（若存在就追加），将 IP 地址与端口写进去。
 
 获取到的打洞地址会同时显示在控制台当中。

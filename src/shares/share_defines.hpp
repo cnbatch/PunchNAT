@@ -29,11 +29,13 @@ struct user_settings
 	std::string stun_server;
 	std::filesystem::path log_directory;
 	std::filesystem::path log_ip_address;
+	std::filesystem::path log_messages;
 };
 
 user_settings parse_from_args(const std::vector<std::string> &args, std::vector<std::string> &error_msg);
 void check_settings(user_settings &current_user_settings, std::vector<std::string> &error_msg);
 int64_t calculate_difference(int64_t number1, int64_t number2);
+void print_ip_to_file(const std::string& message, const std::filesystem::path& log_file);
 void print_message_to_file(const std::string &message, const std::filesystem::path &log_file);
 
 #endif // !_SHARE_HEADER_
