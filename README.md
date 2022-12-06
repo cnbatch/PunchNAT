@@ -70,17 +70,15 @@ punchnat config1.conf config2.conf
 - FreeBSD
 - Linux
 
-FreeBSD 用户可将下载好的二进制文件复制到 `/usr/local/bin/`，然后运行命令
-```
-chmod +x /usr/local/bin/punchnat
-```
-
 ---
 
 ## 建立服务
 ### FreeBSD
 
-**提示：务必事先做完上一个步骤，将二进制文件复制到 `/usr/local/bin/`**
+FreeBSD 用户可将下载好的二进制文件复制到 `/usr/local/bin/`，然后运行命令
+```
+chmod +x /usr/local/bin/punchnat
+```
 
 本项目的 `service` 目录已经准备好相应服务文件。
 
