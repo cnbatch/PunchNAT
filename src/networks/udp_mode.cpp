@@ -85,74 +85,81 @@ void udp_mode::udp_server_incoming(std::shared_ptr<uint8_t[]> data, size_t data_
 		}
 	}
 
-	std::shared_lock share_locker_udp_session_map_to_wrapper{ mutex_udp_session_map_to_wrapper, std::defer_lock };
-	std::unique_lock unique_locker_udp_session_map_to_wrapper{ mutex_udp_session_map_to_wrapper, std::defer_lock };
-	share_locker_udp_session_map_to_wrapper.lock();
+	udp_client* udp_session = nullptr;
 
-	auto iter = udp_session_map_to_wrapper.find(peer);
-	if (iter == udp_session_map_to_wrapper.end())
 	{
-		share_locker_udp_session_map_to_wrapper.unlock();
-		unique_locker_udp_session_map_to_wrapper.lock();
-		iter = udp_session_map_to_wrapper.find(peer);
+		std::shared_lock share_locker_udp_session_map_to_wrapper{ mutex_udp_session_map_to_wrapper, std::defer_lock };
+		std::unique_lock unique_locker_udp_session_map_to_wrapper{ mutex_udp_session_map_to_wrapper, std::defer_lock };
+		share_locker_udp_session_map_to_wrapper.lock();
+
+		auto iter = udp_session_map_to_wrapper.find(peer);
 		if (iter == udp_session_map_to_wrapper.end())
 		{
-			const std::string &destination_address = current_settings.destination_address;
-			uint16_t destination_port = current_settings.destination_port;
-			if (destination_port == 0)
-				return;
-
-			auto udp_func = std::bind(&udp_mode::udp_client_incoming_to_udp, this, _1, _2, _3, _4);
-			auto udp_forwarder = std::make_unique<udp_client>(network_io, asio_strand, udp_func);
-			if (udp_forwarder == nullptr)
-				return;
-
-			auto forwarder_ptr = udp_forwarder.get();
-			asio::error_code ec;
-			for (int i = 0; i < RETRY_TIMES; ++i)
+			share_locker_udp_session_map_to_wrapper.unlock();
+			unique_locker_udp_session_map_to_wrapper.lock();
+			iter = udp_session_map_to_wrapper.find(peer);
+			if (iter == udp_session_map_to_wrapper.end())
 			{
-				udp::resolver::results_type udp_endpoints = forwarder_ptr->get_remote_hostname(destination_address, destination_port, ec);
+				const std::string& destination_address = current_settings.destination_address;
+				uint16_t destination_port = current_settings.destination_port;
+				if (destination_port == 0)
+					return;
+
+				auto udp_func = std::bind(&udp_mode::udp_client_incoming_to_udp, this, _1, _2, _3, _4);
+				auto udp_forwarder = std::make_unique<udp_client>(network_io, asio_strand, udp_func);
+				if (udp_forwarder == nullptr)
+					return;
+
+				auto forwarder_ptr = udp_forwarder.get();
+				asio::error_code ec;
+				for (int i = 0; i < RETRY_TIMES; ++i)
+				{
+					udp::resolver::results_type udp_endpoints = forwarder_ptr->get_remote_hostname(destination_address, destination_port, ec);
+					if (ec)
+					{
+						std::cerr << ec.message() << "\n";
+						std::this_thread::sleep_for(std::chrono::seconds(RETRY_WAITS));
+					}
+					else if (udp_endpoints.size() == 0)
+					{
+						std::cerr << "UDP Mode - destination address not found\n";
+						std::this_thread::sleep_for(std::chrono::seconds(RETRY_WAITS));
+					}
+					else
+					{
+						std::scoped_lock locker{ mutex_udp_target };
+						udp_target = std::make_unique<udp::endpoint>(*udp_endpoints.begin());
+						break;
+					}
+				}
+
 				if (ec)
-				{
-					std::cerr << ec.message() << "\n";
-					std::this_thread::sleep_for(std::chrono::seconds(RETRY_WAITS));
-				}
-				else if (udp_endpoints.size() == 0)
-				{
-					std::cerr << "UDP Mode - destination address not found\n";
-					std::this_thread::sleep_for(std::chrono::seconds(RETRY_WAITS));
-				}
-				else
-				{
-					std::scoped_lock locker{ mutex_udp_target };
-					udp_target = std::make_unique<udp::endpoint>(*udp_endpoints.begin());
-					break;
-				}
+					return;
+
+				forwarder_ptr->send_out(data.get(), data_size, *udp_target, ec);
+				if (ec)
+					return;
+
+				asio::ip::port_type port_number = forwarder_ptr->local_port_number();
+				std::unique_lock lock_wrapper_session_map_to_udp{ mutex_wrapper_session_map_to_udp };
+				wrapper_session_map_to_udp[port_number] = peer;
+				lock_wrapper_session_map_to_udp.unlock();
+				udp_session_map_to_wrapper.insert({ peer, std::move(udp_forwarder) });
+
+				forwarder_ptr->async_receive();
+
+				return;
 			}
-
-			if (ec)
-				return;
-
-			forwarder_ptr->send_out(data.get(), data_size, *udp_target, ec);
-			if (ec)
-				return;
-
-			asio::ip::port_type port_number = forwarder_ptr->local_port_number();
-			std::unique_lock lock_wrapper_session_map_to_udp{ mutex_wrapper_session_map_to_udp };
-			wrapper_session_map_to_udp[port_number] = peer;
-			lock_wrapper_session_map_to_udp.unlock();
-			udp_session_map_to_wrapper.insert({ peer, std::move(udp_forwarder) });
-
-			forwarder_ptr->async_receive();
-
-			return;
+			else
+			{
+				udp_session = iter->second.get();
+			}
 		}
-		unique_locker_udp_session_map_to_wrapper.unlock();
-		share_locker_udp_session_map_to_wrapper.lock();
+		else
+		{
+			udp_session = iter->second.get();
+		}
 	}
-
-	udp_client *udp_session = iter->second.get();
-	share_locker_udp_session_map_to_wrapper.unlock();
 
 	udp_session->async_send_out(data, data_size, get_remote_address());
 }

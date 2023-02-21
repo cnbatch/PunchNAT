@@ -123,6 +123,7 @@ void print_ip_to_file(const std::string& message, const std::filesystem::path& l
 	std::unique_lock locker{ mtx };
 	output_file.open(log_file, std::ios::out | std::ios::app);
 	output_file << message;
+	output_file.close();
 }
 
 void print_message_to_file(const std::string& message, const std::filesystem::path& log_file)
@@ -132,4 +133,5 @@ void print_message_to_file(const std::string& message, const std::filesystem::pa
 	std::unique_lock locker{ mtx };
 	output_file.open(log_file, std::ios::out | std::ios::app);
 	output_file << message;
+	output_file.close();
 }
