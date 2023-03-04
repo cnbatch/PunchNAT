@@ -30,15 +30,15 @@ class tcp_mode
 	asio::strand<asio::io_context::executor_type> asio_strand;
 
 	void tcp_server_accept_incoming(std::unique_ptr<tcp_session> &&incoming_session);
-	void tcp_server_incoming(std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *outcoming_session);
-	void tcp_client_incoming(std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *output_session);
+	void tcp_server_incoming(std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *outcoming_session);
+	void tcp_client_incoming(std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *output_session);
 	void local_disconnect(tcp_session *incoming_session, tcp_session *outcoming_session);
 	void connect_stun();
 	void send_stun_request(const asio::error_code &e);
 	void stun_keep_alive(tcp_session *incoming_session);
 	void stun_disconnected(tcp_session *incoming_session);
 	void save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_port, const std::array<uint8_t, 16> &ipv6_address, uint16_t ipv6_port);
-	void extract_stun_data(std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *session);
+	void extract_stun_data(std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *session);
 
 public:
 	tcp_mode() = delete;
@@ -96,8 +96,8 @@ class udp_mode
 	asio::steady_timer timer_stun;
 	asio::strand<asio::io_context::executor_type> asio_strand;
 
-	void udp_server_incoming(std::shared_ptr<uint8_t[]> data, size_t data_size, udp::endpoint &&peer, asio::ip::port_type port_number);
-	void udp_client_incoming_to_udp(std::shared_ptr<uint8_t[]> data, size_t data_size, udp::endpoint &&peer, asio::ip::port_type local_port_number);
+	void udp_server_incoming(std::unique_ptr<uint8_t[]> data, size_t data_size, udp::endpoint peer, asio::ip::port_type port_number);
+	void udp_client_incoming_to_udp(std::unique_ptr<uint8_t[]> data, size_t data_size, udp::endpoint peer, asio::ip::port_type local_port_number);
 	udp::endpoint get_remote_address();
 
 	void loop_timeout_sessions();

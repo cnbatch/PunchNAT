@@ -67,7 +67,7 @@ bool udp_mode::start()
 	return true;
 }
 
-void udp_mode::udp_server_incoming(std::shared_ptr<uint8_t[]> data, size_t data_size, udp::endpoint &&peer, asio::ip::port_type port_number)
+void udp_mode::udp_server_incoming(std::unique_ptr<uint8_t[]> data, size_t data_size, udp::endpoint peer, asio::ip::port_type port_number)
 {
 	if (data_size == 0)
 		return;
@@ -161,11 +161,11 @@ void udp_mode::udp_server_incoming(std::shared_ptr<uint8_t[]> data, size_t data_
 		}
 	}
 
-	udp_session->async_send_out(data, data_size, get_remote_address());
+	udp_session->async_send_out(std::move(data), data_size, get_remote_address());
 }
 
 
-void udp_mode::udp_client_incoming_to_udp(std::shared_ptr<uint8_t[]> data, size_t data_size, udp::endpoint &&peer, asio::ip::port_type local_port_number)
+void udp_mode::udp_client_incoming_to_udp(std::unique_ptr<uint8_t[]> data, size_t data_size, udp::endpoint peer, asio::ip::port_type local_port_number)
 {
 	if (data_size == 0)
 		return;
@@ -177,7 +177,7 @@ void udp_mode::udp_client_incoming_to_udp(std::shared_ptr<uint8_t[]> data, size_
 	udp::endpoint &udp_endpoint = session_iter->second;
 	lock_wrapper_session_map_to_udp.unlock();
 
-	udp_access_point->async_send_out(data, data_size, udp_endpoint);
+	udp_access_point->async_send_out(std::move(data), data_size, udp_endpoint);
 }
 
 udp::endpoint udp_mode::get_remote_address()

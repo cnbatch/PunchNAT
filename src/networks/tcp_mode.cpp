@@ -80,9 +80,9 @@ void tcp_mode::tcp_server_accept_incoming(std::unique_ptr<tcp_session> &&incomin
 		return;
 	}
 
-	auto callback_function = [output_ptr = incoming_session.get(), this](std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *target_session)
+	auto callback_function = [output_ptr = incoming_session.get(), this](std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *target_session)
 	{
-		tcp_client_incoming(input_data, data_size, target_session, output_ptr);
+		tcp_client_incoming(std::move(input_data), data_size, target_session, output_ptr);
 	};
 	std::unique_ptr<tcp_session> local_session = target_connector.connect(callback_function, ec);
 
@@ -92,9 +92,9 @@ void tcp_mode::tcp_server_accept_incoming(std::unique_ptr<tcp_session> &&incomin
 	local_session->async_read_data();
 	local_session->when_disconnect([output_ptr = incoming_session.get(), this](tcp_session *session) { local_disconnect(session, output_ptr); });
 
-	incoming_session->replace_callback([output_ptr = local_session.get(), this](std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session)
+	incoming_session->replace_callback([output_ptr = local_session.get(), this](std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session)
 	{
-		tcp_server_incoming(input_data, data_size, incoming_session, output_ptr);
+		tcp_server_incoming(std::move(input_data), data_size, incoming_session, output_ptr);
 	});
 	incoming_session->when_disconnect([output_ptr = local_session.get(), this](tcp_session *session) { local_disconnect(session, output_ptr); });
 	incoming_session->async_read_data();
@@ -105,7 +105,7 @@ void tcp_mode::tcp_server_accept_incoming(std::unique_ptr<tcp_session> &&incomin
 	tcp_sessions.insert({ output_ptr, std::move(local_session) });
 }
 
-void tcp_mode::tcp_server_incoming(std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *outcoming_session)
+void tcp_mode::tcp_server_incoming(std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *outcoming_session)
 {
 	if (data_size == 0)
 		return;
@@ -113,12 +113,12 @@ void tcp_mode::tcp_server_incoming(std::shared_ptr<uint8_t[]> input_data, size_t
 	outcoming_session->async_send_data(std::move(input_data), data_size);
 }
 
-void tcp_mode::tcp_client_incoming(std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *output_session)
+void tcp_mode::tcp_client_incoming(std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *incoming_session, tcp_session *output_session)
 {
 	if (data_size == 0)
 		return;
 
-	output_session->async_send_data(input_data, data_size);
+	output_session->async_send_data(std::move(input_data), data_size);
 }
 
 void tcp_mode::local_disconnect(tcp_session *incoming_session, tcp_session *outcoming_session)
@@ -142,7 +142,7 @@ void tcp_mode::connect_stun()
 		return;
 
 	stun_keep_alive(stun_keep_alive_session.get());
-	auto stun_ip_func = [this](std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *session) { extract_stun_data(input_data, data_size, session); };
+	auto stun_ip_func = [this](std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *session) { extract_stun_data(std::move(input_data), data_size, session); };
 	auto stun_session = tcp_access_point->connect(current_settings.stun_server, "3478", stun_ip_func, ec);
 	if (ec)
 	{
@@ -173,7 +173,7 @@ void tcp_mode::send_stun_request(const asio::error_code &e)
 		return;
 
 	asio::error_code ec;
-	auto stun_ip_func = [this](std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *session) { extract_stun_data(input_data, data_size, session); };
+	auto stun_ip_func = [this](std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session *session) { extract_stun_data(std::move(input_data), data_size, session); };
 	auto stun_session = tcp_access_point->connect(current_settings.stun_server, "3478", stun_ip_func, ec);
 	if (!ec || stun_session != nullptr)
 	{
@@ -230,7 +230,7 @@ void tcp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 	}
 }
 
-void tcp_mode::extract_stun_data(std::shared_ptr<uint8_t[]> input_data, size_t data_size, tcp_session * session)
+void tcp_mode::extract_stun_data(std::unique_ptr<uint8_t[]> input_data, size_t data_size, tcp_session * session)
 {
 	if (stun_header != nullptr)
 	{
