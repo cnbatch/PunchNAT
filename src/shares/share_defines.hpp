@@ -24,6 +24,7 @@ struct user_settings
 {
 	uint16_t listen_port = 0;
 	uint16_t destination_port = 0;
+	uint16_t udp_timeout = 0;
 	std::string listen_on;
 	std::string destination_address;
 	std::string stun_server;

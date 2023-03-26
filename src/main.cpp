@@ -18,8 +18,8 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	asio::io_context ioc;
-	asio::io_context network_io{ 1 };
+	asio::io_context ioc {1};
+	asio::io_context network_io;
 	std::vector<udp_mode> udp_sessions;
 	std::vector<tcp_mode> tcp_sessions;
 

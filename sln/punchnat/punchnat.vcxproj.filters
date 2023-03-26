@@ -47,9 +47,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\shares\dynarray.hpp">
-      <Filter>Header Files\shares</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\shares\share_defines.hpp">
       <Filter>Header Files\shares</Filter>
     </ClInclude>

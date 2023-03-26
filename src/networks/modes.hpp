@@ -85,7 +85,7 @@ class udp_mode
 	const std::array<uint8_t, 16> zero_value_array;
 
 	std::shared_mutex mutex_udp_session_map_to_wrapper;
-	std::unordered_map<udp::endpoint, std::unique_ptr<udp_client>> udp_session_map_to_wrapper;
+	std::unordered_map<udp::endpoint, std::shared_ptr<udp_client>> udp_session_map_to_wrapper;
 	std::shared_mutex mutex_wrapper_session_map_to_udp;
 	std::unordered_map<asio::ip::port_type, udp::endpoint> wrapper_session_map_to_udp;
 

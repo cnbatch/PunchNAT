@@ -195,8 +195,9 @@ void udp_mode::loop_timeout_sessions()
 	for (auto iter = udp_session_map_to_wrapper.begin(), next_iter = iter; iter != udp_session_map_to_wrapper.end(); iter = next_iter)
 	{
 		++next_iter;
-		std::unique_ptr<udp_client> &client_ptr = iter->second;
-		if (client_ptr->time_gap_of_receive() >= TIMEOUT && client_ptr->time_gap_of_send() >= TIMEOUT)
+		std::shared_ptr<udp_client> client_ptr = iter->second;
+		if (client_ptr->time_gap_of_receive() >= current_settings.udp_timeout &&
+			client_ptr->time_gap_of_send() >= current_settings.udp_timeout)
 		{
 			asio::ip::port_type port_number = client_ptr->local_port_number();
 			client_ptr->pause(true);
@@ -205,7 +206,8 @@ void udp_mode::loop_timeout_sessions()
 			wrapper_session_map_to_udp.erase(port_number);
 		}
 
-		if (client_ptr->time_gap_of_receive() > TIMEOUT + 5 && client_ptr->time_gap_of_send() > TIMEOUT + 5)
+		if (client_ptr->time_gap_of_receive() > (int64_t)current_settings.udp_timeout + 5 &&
+			client_ptr->time_gap_of_send() > (int64_t)current_settings.udp_timeout + 5)
 		{
 			udp_session_map_to_wrapper.erase(iter);
 		}

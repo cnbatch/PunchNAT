@@ -28,7 +28,6 @@ constexpr size_t BUFFER_SIZE = 4096u;
 constexpr size_t EMPTY_PACKET_SIZE = 1430u;
 constexpr size_t RETRY_TIMES = 5u;
 constexpr size_t RETRY_WAITS = 3u;
-constexpr size_t TIMEOUT = 180;	// second
 constexpr size_t CLEANUP_WAITS = 10;	// second
 constexpr auto STUN_RESEND = std::chrono::seconds(30);
 constexpr auto FINDER_TIMEOUT_INTERVAL = std::chrono::seconds(1);

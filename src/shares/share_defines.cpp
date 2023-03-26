@@ -1,3 +1,4 @@
+#include <climits>
 #include <limits>
 #include <stdexcept>
 #include <cstdlib>
@@ -5,6 +6,8 @@
 #include <mutex>
 #include "share_defines.hpp"
 #include "string_utils.hpp"
+
+constexpr size_t TIMEOUT = 180;	// second
 
 user_settings parse_from_args(const std::vector<std::string> &args, std::vector<std::string> &error_msg)
 {
@@ -65,6 +68,13 @@ user_settings parse_from_args(const std::vector<std::string> &args, std::vector<
 			current_user_settings.log_directory = original_value;
 			break;
 
+		case strhash("udp_timeout"):
+			if (auto time_interval = std::stoi(value); time_interval <= 0 || time_interval > USHRT_MAX)
+				current_user_settings.udp_timeout = 0;
+			else
+				current_user_settings.udp_timeout = static_cast<uint16_t>(time_interval);
+			break;
+
 		default:
 			error_msg.emplace_back("unknow option: " + arg);
 		}
@@ -80,17 +90,20 @@ void check_settings(user_settings &current_user_settings, std::vector<std::strin
 	if (current_user_settings.destination_address.empty())
 		error_msg.emplace_back("invalid destination_address setting");
 
-	if (0 == current_user_settings.listen_port)
+	if (current_user_settings.listen_port == 0)
 		error_msg.emplace_back("listen_port is not set");
 
-	if (0 == current_user_settings.destination_port)
+	if (current_user_settings.destination_port == 0)
 		error_msg.emplace_back("destination_port is not set");
 
 	if (!current_user_settings.stun_server.empty())
 	{
-		if (0 == current_user_settings.listen_port)
+		if (current_user_settings.listen_port == 0)
 			error_msg.emplace_back("do not specify multiple listen ports when STUN Server is set");
 	}
+
+	if (current_user_settings.udp_timeout == 0)
+		current_user_settings.udp_timeout = TIMEOUT;
 
 	if (!current_user_settings.log_directory.empty())
 	{
