@@ -13,8 +13,10 @@ int main(int argc, char *argv[])
 {
 	if (argc <= 1)
 	{
-		printf("Usage: %s config1.conf\n", argv[0]);
-		printf("       %s config1.conf config2.conf...\n", argv[0]);
+		char app_name[] = "punchnat";
+		printf("%s version 20230415\n", app_name);
+		printf("Usage: %s config1.conf\n", app_name);
+		printf("       %s config1.conf config2.conf...\n", app_name);
 		return 0;
 	}
 

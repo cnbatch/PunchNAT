@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <mutex>
 #include "share_defines.hpp"
 #include "string_utils.hpp"
@@ -129,12 +130,21 @@ int64_t calculate_difference(int64_t number1, int64_t number2)
 	return std::abs(number1 - number2);
 }
 
+std::string time_to_string()
+{
+	std::time_t t = std::time(nullptr);
+	std::tm tm = *std::localtime(&t);
+	std::ostringstream oss;
+	oss << std::put_time(&tm, "%F %T %z");
+	return oss.str();
+}
+
 void print_ip_to_file(const std::string& message, const std::filesystem::path& log_file)
 {
 	static std::ofstream output_file{};
 	static std::mutex mtx;
 	std::unique_lock locker{ mtx };
-	output_file.open(log_file, std::ios::out | std::ios::app);
+	output_file.open(log_file, std::ios::out | std::ios::trunc);
 	output_file << message;
 	output_file.close();
 }

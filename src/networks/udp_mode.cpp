@@ -240,6 +240,9 @@ void udp_mode::send_stun_request(const asio::error_code &e)
 
 void udp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_port, const std::array<uint8_t, 16>& ipv6_address, uint16_t ipv6_port)
 {
+	std::string v4_info;
+	std::string v6_info;
+
 	if (ipv4_address != 0 && ipv4_port != 0 && (external_ipv4_address.load() != ipv4_address || external_ipv4_port.load() != ipv4_port))
 	{
 		external_ipv4_address.store(ipv4_address);
@@ -247,10 +250,8 @@ void udp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 		std::stringstream ss;
 		ss << "UDP Mode - External IPv4 Address: " << asio::ip::make_address_v4(ipv4_address) << "\n";
 		ss << "UDP Mode - External IPv4 Port: " << ipv4_port << "\n";
-		std::string message = ss.str();
 		if (!current_settings.log_ip_address.empty())
-			print_ip_to_file(message, current_settings.log_ip_address);
-		std::cout << message;
+			v4_info = ss.str();
 	}
 
 	std::shared_lock locker(mutex_ipv6);
@@ -264,9 +265,14 @@ void udp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 		std::stringstream ss;
 		ss << "UDP Mode - External IPv6 Address: " << asio::ip::make_address_v6(ipv6_address) << "\n";
 		ss << "UDP Mode - External IPv6 Port: " << ipv6_port << "\n";
-		std::string message = ss.str();
 		if (!current_settings.log_ip_address.empty())
-			print_ip_to_file(message, current_settings.log_ip_address);
+			v6_info = ss.str();
+	}
+
+	if (!current_settings.log_ip_address.empty())
+	{
+		std::string message = "Update Time: " + time_to_string() + "\n" + v4_info + v6_info;
+		print_ip_to_file(message, current_settings.log_ip_address);
 		std::cout << message;
 	}
 }
