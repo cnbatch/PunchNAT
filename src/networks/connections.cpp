@@ -27,12 +27,16 @@ void empty_tcp_disconnect(tcp_session *tmp)
 {
 }
 
-std::unique_ptr<rfc3489::stun_header> send_stun_3489_request(udp_server &sender, const std::string &stun_host)
+std::unique_ptr<rfc3489::stun_header> send_stun_3489_request(udp_server &sender, const std::string &stun_host, bool v4_only)
 {
+	auto udp_version = v4_only ? udp::v4() : udp::v6();
+	udp::resolver::resolver_base::flags input_flags = udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching;
+	if (v4_only)
+		input_flags = udp::resolver::numeric_service;
+
 	asio::error_code ec;
 	udp::resolver &udp_resolver = sender.get_resolver();
-	udp::resolver::results_type remote_addresses = udp_resolver.resolve(udp::v6(), stun_host, "3478",
-		udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching, ec);
+	udp::resolver::results_type remote_addresses = udp_resolver.resolve(udp_version, stun_host, "3478", input_flags, ec);
 
 	if (ec)
 		return nullptr;
@@ -50,12 +54,16 @@ std::unique_ptr<rfc3489::stun_header> send_stun_3489_request(udp_server &sender,
 	return header;
 }
 
-std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(udp_server &sender, const std::string &stun_host)
+std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(udp_server &sender, const std::string &stun_host, bool v4_only)
 {
+	auto udp_version = v4_only ? udp::v4() : udp::v6();
+	udp::resolver::resolver_base::flags input_flags = udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching;
+	if (v4_only)
+		input_flags = udp::resolver::numeric_service;
+
 	asio::error_code ec;
 	udp::resolver &udp_resolver = sender.get_resolver();
-	udp::resolver::results_type remote_addresses = udp_resolver.resolve(udp::v6(), stun_host, "3478",
-		udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching, ec);
+	udp::resolver::results_type remote_addresses = udp_resolver.resolve(udp_version, stun_host, "3478", input_flags, ec);
 
 	if (ec)
 		return nullptr;
@@ -74,12 +82,16 @@ std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(udp_server &sender,
 	return header;
 }
 
-void resend_stun_8489_request(udp_server &sender, const std::string &stun_host, rfc8489::stun_header *header)
+void resend_stun_8489_request(udp_server &sender, const std::string &stun_host, rfc8489::stun_header *header, bool v4_only)
 {
+	auto udp_version = v4_only ? udp::v4() : udp::v6();
+	udp::resolver::resolver_base::flags input_flags = udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching;
+	if (v4_only)
+		input_flags = udp::resolver::numeric_service;
+
 	asio::error_code ec;
 	udp::resolver &udp_resolver = sender.get_resolver();
-	udp::resolver::results_type remote_addresses = udp_resolver.resolve(udp::v6(), stun_host, "3478",
-		udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching, ec);
+	udp::resolver::results_type remote_addresses = udp_resolver.resolve(udp_version, stun_host, "3478", input_flags, ec);
 
 	if (ec)
 		return;
@@ -265,7 +277,8 @@ void tcp_server::acceptor_initialise(tcp::endpoint ep)
 {
 	asio::ip::v6_only v6_option(false);
 	tcp_acceptor.open(ep.protocol());
-	tcp_acceptor.set_option(v6_option);
+	if (ep.address().is_v6())
+		tcp_acceptor.set_option(v6_option);
 	tcp_acceptor.set_option(tcp::no_delay(true));
 	tcp_acceptor.bind(ep);
 	tcp_acceptor.listen(tcp_acceptor.max_connections);
@@ -320,8 +333,12 @@ bool tcp_client::set_remote_hostname(const std::string &remote_address, asio::ip
 
 bool tcp_client::set_remote_hostname(const std::string &remote_address, const std::string &port_num, asio::error_code &ec)
 {
-	remote_endpoints = resolver.resolve(tcp::v6(), remote_address, port_num,
-		tcp::resolver::numeric_service | tcp::resolver::v4_mapped | tcp::resolver::all_matching, ec);
+	auto tcp_version = ipv4_only ? tcp::v4() : tcp::v6();
+	tcp::resolver::resolver_base::flags input_flags = tcp::resolver::numeric_service | tcp::resolver::v4_mapped | tcp::resolver::all_matching;
+	if (ipv4_only)
+		input_flags = tcp::resolver::numeric_service;
+	
+	remote_endpoints = resolver.resolve(tcp_version, remote_address, port_num, input_flags, ec);
 
 	return remote_endpoints.size() > 0;
 }
@@ -356,7 +373,8 @@ void udp_server::initialise(udp::endpoint ep)
 {
 	asio::ip::v6_only v6_option(false);
 	connection_socket.open(ep.protocol());
-	connection_socket.set_option(v6_option);
+	if (ep.address().is_v6())
+		connection_socket.set_option(v6_option);
 	connection_socket.bind(ep);
 }
 
@@ -427,10 +445,12 @@ udp::resolver::results_type udp_client::get_remote_hostname(const std::string &r
 
 udp::resolver::results_type udp_client::get_remote_hostname(const std::string &remote_address, const std::string &port_num, asio::error_code &ec)
 {
-	udp::resolver::results_type remote_addresses = resolver.resolve(udp::v6(), remote_address, port_num,
-		udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching, ec);
-
-	return remote_addresses;
+	if (ipv4_only)
+		return resolver.resolve(udp::v4(), remote_address, port_num,
+			udp::resolver::numeric_service | udp::resolver::address_configured, ec);
+	else
+		return resolver.resolve(udp::v6(), remote_address, port_num,
+			udp::resolver::numeric_service | udp::resolver::v4_mapped | udp::resolver::all_matching, ec);
 }
 
 void udp_client::disconnect()
@@ -523,7 +543,8 @@ void udp_client::initialise()
 {
 	asio::ip::v6_only v6_option(false);
 	connection_socket.open(udp::v6());
-	connection_socket.set_option(v6_option);
+	if (!ipv4_only)
+		connection_socket.set_option(v6_option);
 }
 
 void udp_client::start_receive()

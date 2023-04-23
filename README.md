@@ -40,6 +40,10 @@ punchnat config1.conf config2.conf
 
 如果不需要写入 Log 文件，那就删除 `log_path` 这一行。
 
+### 参数介绍
+
+
+
 ### STUN Servers
 不支持 TCP 的普通 STUN 服务器（来自于[NatTypeTeste](https://github.com/HMBSbige/NatTypeTester)）
 - stun.syncthing.net
@@ -69,6 +73,8 @@ punchnat config1.conf config2.conf
 - Windows
 - FreeBSD
 - Linux
+
+预编译的二进制文件全部都是静态编译。Linux 版本基本上都是静态编译，但 libc 除外，因此准备了两个版本，一个用于 glibc (2.31)，另一个用于 musl。
 
 ---
 
@@ -157,27 +163,11 @@ make
 ---
 
 ## IPv4 映射 IPv6
-由于该项目内部使用的是 IPv6 单栈 + 开启 IPv4 映射地址（IPv4-mapped IPv6）来使用 IPv4 网络，因此请确保 v6only 选项的值为 0。
+由于 PunchNAT 内部使用的是 IPv6 单栈 + 开启 IPv4 映射地址（IPv4-mapped IPv6）来同时使用 IPv4 与 IPv6 网络，因此请确保 v6only 选项的值为 0。
 
 **正常情况下不需要任何额外设置，FreeBSD 与 Linux 以及 Windows 都默认允许 IPv4 地址映射到 IPv6。**
 
-如果不放心，那么可以这样做
-### FreeBSD
-按照FreeBSD手册 [33.9.5. IPv6 and IPv4 Address Mapping](https://docs.freebsd.org/en/books/handbook/advanced-networking/#_ipv6_and_ipv4_address_mapping) 介绍，在 `/etc/rc.conf` 加一行即可
-```
-ipv6_ipv4mapping="YES"
-```
-如果还是不放心，那就运行命令
-```
-sysctl net.inet6.ip6.v6only=0
-```
-
-### Linux
-可运行命令
-```
-sysctl -w net.ipv6.bindv6only=0
-```
-正常情况下不需要这样做，它的默认值就是 0。
+如果系统不支持 IPv6，或者禁用了 IPv6，请在配置文件中设置 ipv4_only=true，这样 PunchNAT 会退回到使用 IPv4 单栈模式。
 
 ## 其它注意事项
 ### NetBSD
@@ -187,13 +177,13 @@ sysctl -w net.inet6.ip6.v6only=0
 ```
 设置后，单栈+映射地址模式可以侦听双栈。
 
-但由于未知的原因，它无法主动连接 IPv4 映射地址，因此 `destination_address` 只能使用 IPv6 地址。
+但由于未知的原因，可能无法主动连接 IPv4 映射地址。
 
 ### OpenBSD
-因为 OpenBSD 彻底屏蔽了 IPv4 映射地址，所以在 OpenBSD 平台只能使用 IPv6 单栈模式。
+因为 OpenBSD 彻底屏蔽了 IPv4 映射地址，所以在 OpenBSD 平台使用双栈的话，需要将配置文件保存成两个，其中一个启用 ipv4_only=1，然后在使用 PunchNAT 时同时载入两个配置文件。
 
 ## 关于代码
-### 为什么要用两个 asio::io_context
-这里用了两个 asio::io_context，其中一个是用于处理 UDP 数据的异步循环，另一个用于处理内部逻辑以及 TCP 数据的收发。
+### 版面
+代码写得很随意，想到哪写到哪，因此版面混乱。
 
-之所以要这样做，完全是为了迁就 BSD 系统。如果只用一个 io_context 去做所有的事，由于两次接收之间的延迟过高，在 BSD 平台会导致 UDP 丢包率过高。
+至于阅读者的感受嘛…… 那肯定会不爽。

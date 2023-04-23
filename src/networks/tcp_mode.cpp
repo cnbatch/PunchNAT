@@ -26,7 +26,12 @@ bool tcp_mode::start()
 	if (port_number == 0)
 		return false;
 
-	tcp::endpoint listen_on_ep(tcp::v6(), port_number);
+	tcp::endpoint listen_on_ep;
+	if (current_settings.ipv4_only)
+		listen_on_ep = tcp::endpoint(tcp::v4(), port_number);
+	else
+		listen_on_ep = tcp::endpoint(tcp::v6(), port_number);
+
 	if (!current_settings.listen_on.empty())
 	{
 		asio::error_code ec;
@@ -39,7 +44,7 @@ bool tcp_mode::start()
 			return false;
 		}
 
-		if (local_address.is_v4())
+		if (local_address.is_v4() && !current_settings.ipv4_only)
 			listen_on_ep.address(asio::ip::make_address_v6(asio::ip::v4_mapped, local_address.to_v4()));
 		else
 			listen_on_ep.address(local_address);
@@ -70,7 +75,7 @@ void tcp_mode::tcp_server_accept_incoming(std::unique_ptr<tcp_session> &&incomin
 	if (!incoming_session->is_open())
 		return;
 
-	tcp_client target_connector(io_context);
+	tcp_client target_connector(io_context, current_settings.ipv4_only);
 	std::string &destination_address = current_settings.destination_address;
 	uint16_t destination_port = current_settings.destination_port;
 	asio::error_code ec;

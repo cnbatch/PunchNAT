@@ -23,7 +23,12 @@ bool udp_mode::start()
 	if (port_number == 0)
 		return false;
 
-	udp::endpoint listen_on_ep(udp::v6(), port_number);
+	udp::endpoint listen_on_ep;
+	if (current_settings.ipv4_only)
+		listen_on_ep = udp::endpoint(udp::v4(), port_number);
+	else
+		listen_on_ep = udp::endpoint(udp::v6(), port_number);
+
 	if (!current_settings.listen_on.empty())
 	{
 		asio::error_code ec;
@@ -36,7 +41,7 @@ bool udp_mode::start()
 			return false;
 		}
 
-		if (local_address.is_v4())
+		if (local_address.is_v4() && !current_settings.ipv4_only)
 			listen_on_ep.address(asio::ip::make_address_v6(asio::ip::v4_mapped, local_address.to_v4()));
 		else
 			listen_on_ep.address(local_address);
@@ -53,7 +58,7 @@ bool udp_mode::start()
 		
 		if (!current_settings.stun_server.empty())
 		{
-			stun_header = send_stun_8489_request(*udp_access_point, current_settings.stun_server);
+			stun_header = send_stun_8489_request(*udp_access_point, current_settings.stun_server, current_settings.ipv4_only);
 			timer_stun.expires_after(std::chrono::seconds(1));
 			timer_stun.async_wait([this](const asio::error_code &e) { send_stun_request(e); });
 		}
@@ -106,7 +111,7 @@ void udp_mode::udp_server_incoming(std::unique_ptr<uint8_t[]> data, size_t data_
 					return;
 
 				auto udp_func = std::bind(&udp_mode::udp_client_incoming_to_udp, this, _1, _2, _3, _4);
-				auto udp_forwarder = std::make_unique<udp_client>(network_io, asio_strand, udp_func);
+				auto udp_forwarder = std::make_unique<udp_client>(network_io, asio_strand, udp_func, current_settings.ipv4_only);
 				if (udp_forwarder == nullptr)
 					return;
 
@@ -232,7 +237,7 @@ void udp_mode::send_stun_request(const asio::error_code &e)
 		return;
 
 	if (!current_settings.stun_server.empty())
-		resend_stun_8489_request(*udp_access_point, current_settings.stun_server, stun_header.get());
+		resend_stun_8489_request(*udp_access_point, current_settings.stun_server, stun_header.get(), current_settings.ipv4_only);
 
 	timer_stun.expires_after(STUN_RESEND);
 	timer_stun.async_wait([this](const asio::error_code &e) { send_stun_request(e); });

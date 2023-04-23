@@ -76,6 +76,13 @@ user_settings parse_from_args(const std::vector<std::string> &args, std::vector<
 				current_user_settings.udp_timeout = static_cast<uint16_t>(time_interval);
 			break;
 
+		case strhash("ipv4_only"):
+		{
+			bool yes = value == "yes" || value == "true" || value == "1";
+			current_user_settings.ipv4_only = yes;
+			break;
+		}
+		
 		default:
 			error_msg.emplace_back("unknow option: " + arg);
 		}
@@ -145,7 +152,8 @@ void print_ip_to_file(const std::string& message, const std::filesystem::path& l
 	static std::mutex mtx;
 	std::unique_lock locker{ mtx };
 	output_file.open(log_file, std::ios::out | std::ios::trunc);
-	output_file << message;
+	if (output_file.is_open() && output_file.good())
+		output_file << message;
 	output_file.close();
 }
 
@@ -155,6 +163,7 @@ void print_message_to_file(const std::string& message, const std::filesystem::pa
 	static std::mutex mtx;
 	std::unique_lock locker{ mtx };
 	output_file.open(log_file, std::ios::out | std::ios::app);
-	output_file << message;
+	if (output_file.is_open() && output_file.good())
+		output_file << message;
 	output_file.close();
 }

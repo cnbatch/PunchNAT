@@ -14,9 +14,9 @@
 template<typename T>
 T generate_random_number()
 {
-	std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_int_distribution<T> uniform_dist(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+	thread_local std::random_device rd;
+	thread_local std::mt19937 mt(rd());
+	thread_local std::uniform_int_distribution<T> uniform_dist(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 	return uniform_dist(mt);
 }
 
@@ -25,6 +25,7 @@ struct user_settings
 	uint16_t listen_port = 0;
 	uint16_t destination_port = 0;
 	uint16_t udp_timeout = 0;
+	bool ipv4_only = false;
 	std::string listen_on;
 	std::string destination_address;
 	std::string stun_server;

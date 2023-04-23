@@ -122,8 +122,8 @@ class tcp_client
 {
 public:
 	tcp_client() = delete;
-	tcp_client(asio::io_context &io_context)
-		: internal_io_context(io_context), resolver(io_context)
+	tcp_client(asio::io_context &io_context, bool v4_only = false)
+		: internal_io_context(io_context), resolver(io_context), ipv4_only(v4_only)
 	{
 	}
 
@@ -137,6 +137,7 @@ private:
 	asio::io_context &internal_io_context;
 	tcp::resolver resolver;
 	asio::ip::basic_resolver_results<asio::ip::tcp> remote_endpoints;
+	const bool ipv4_only;
 };
 
 
@@ -177,10 +178,10 @@ class udp_client
 {
 public:
 	udp_client() = delete;
-	udp_client(asio::io_context &io_context, asio::strand<asio::io_context::executor_type> &asio_strand, udp_callback_t callback_func)
+	udp_client(asio::io_context &io_context, asio::strand<asio::io_context::executor_type> &asio_strand, udp_callback_t callback_func, bool v4_only = false)
 		: connection_socket(io_context), resolver(io_context), callback(callback_func), task_assigner(asio_strand),
 		last_receive_time(right_now()), last_send_time(right_now()),
-		paused(false), stopped(false)
+		paused(false), stopped(false), ipv4_only(v4_only)
 	{
 		initialise();
 	}
@@ -225,12 +226,13 @@ protected:
 	std::atomic<int64_t> last_send_time;
 	std::atomic<bool> paused;
 	std::atomic<bool> stopped;
+	const bool ipv4_only;
 };
 
 
-std::unique_ptr<rfc3489::stun_header> send_stun_3489_request(udp_server &sender, const std::string &stun_host);
-std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(udp_server &sender, const std::string &stun_host);
-void resend_stun_8489_request(udp_server &sender, const std::string &stun_host, rfc8489::stun_header *header);
+std::unique_ptr<rfc3489::stun_header> send_stun_3489_request(udp_server &sender, const std::string &stun_host, bool v4_only = false);
+std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(udp_server &sender, const std::string &stun_host, bool v4_only = false);
+void resend_stun_8489_request(udp_server &sender, const std::string &stun_host, rfc8489::stun_header *header, bool v4_only = false);
 std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(tcp_session &sender, const std::string &stun_host);
 void resend_stun_8489_request(tcp_session &sender, const std::string &stun_host, rfc8489::stun_header *header);
 
