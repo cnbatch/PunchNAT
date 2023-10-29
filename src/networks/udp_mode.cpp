@@ -83,7 +83,7 @@ void udp_mode::udp_server_incoming(std::unique_ptr<uint8_t[]> data, size_t data_
 		uint16_t ipv4_port = 0;
 		std::array<uint8_t, 16> ipv6_address{};
 		uint16_t ipv6_port = 0;
-		if (rfc8489::unpack_address_port(data.get(), stun_header->transaction_id_part_1, stun_header->transaction_id_part_2, ipv4_address, ipv4_port, ipv6_address, ipv6_port))
+		if (rfc8489::unpack_address_port(data.get(), stun_header.get(), ipv4_address, ipv4_port, ipv6_address, ipv6_port))
 		{
 			save_external_ip_address(ipv4_address, ipv4_port, ipv6_address, ipv6_port);
 			return;
@@ -255,6 +255,7 @@ void udp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 		std::stringstream ss;
 		ss << "UDP Mode - External IPv4 Address: " << asio::ip::make_address_v4(ipv4_address) << "\n";
 		ss << "UDP Mode - External IPv4 Port: " << ipv4_port << "\n";
+		std::cout << ss.str();
 		if (!current_settings.log_ip_address.empty())
 			v4_info = ss.str();
 	}
@@ -270,6 +271,7 @@ void udp_mode::save_external_ip_address(uint32_t ipv4_address, uint16_t ipv4_por
 		std::stringstream ss;
 		ss << "UDP Mode - External IPv6 Address: " << asio::ip::make_address_v6(ipv6_address) << "\n";
 		ss << "UDP Mode - External IPv6 Port: " << ipv6_port << "\n";
+		std::cout << ss.str();
 		if (!current_settings.log_ip_address.empty())
 			v6_info = ss.str();
 	}
