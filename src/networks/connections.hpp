@@ -235,5 +235,31 @@ std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(udp_server &sender,
 void resend_stun_8489_request(udp_server &sender, const std::string &stun_host, rfc8489::stun_header *header, bool v4_only = false);
 std::unique_ptr<rfc8489::stun_header> send_stun_8489_request(tcp_session &sender, const std::string &stun_host);
 void resend_stun_8489_request(tcp_session &sender, const std::string &stun_host, rfc8489::stun_header *header);
+template<typename T>
+auto split_resolved_addresses(const asio::ip::basic_resolver_results<T> &input_addresses)
+{
+	std::vector<T::endpoint> stun_servers_ipv4;
+	std::vector<T::endpoint> stun_servers_ipv6;
+	for (auto &target_address : input_addresses)
+	{
+		auto ep = target_address.endpoint();
+		auto ep_address = ep.address();
+		if (ep_address.is_v4())
+		{
+			stun_servers_ipv4.emplace_back(ep);
+			continue;
+		}
+
+		if (ep_address.is_v6())
+		{
+			if (ep_address.to_v6().is_v4_mapped())
+				stun_servers_ipv4.emplace_back(ep);
+			else
+				stun_servers_ipv6.emplace_back(target_address.endpoint());
+		}
+	}
+
+	return std::pair{ stun_servers_ipv4 , stun_servers_ipv6 };
+}
 
 #endif // !__CONNECTIONS__
