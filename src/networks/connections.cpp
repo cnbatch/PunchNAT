@@ -163,7 +163,7 @@ bool tcp_session::is_open()
 
 void tcp_session::async_read_data()
 {
-	if (!stopped.load() && connection_socket.is_open())
+	if (connection_socket.is_open())
 	{
 		std::unique_ptr<uint8_t[]> buffer_cache = std::make_unique<uint8_t[]>(BUFFER_SIZE);
 		auto asio_buffer = asio::buffer(buffer_cache.get(), BUFFER_SIZE);
@@ -250,11 +250,12 @@ void tcp_session::after_write_completed(const asio::error_code &error, size_t by
 
 void tcp_session::after_read_completed(std::unique_ptr<uint8_t[]> buffer_cache, const asio::error_code &error, size_t bytes_transferred)
 {
-	if (stopped.load())
-		return;
-
 	if (error)
 	{
+		callback(std::move(buffer_cache), bytes_transferred, this);
+		if (stopped.load())
+			return;
+
 		std::shared_lock locker{ callback_mutex };
 		auto callback_before_disconnect = callback_for_disconnect;
 		locker.unlock();

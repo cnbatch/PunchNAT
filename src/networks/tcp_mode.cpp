@@ -132,7 +132,8 @@ void tcp_mode::local_disconnect(tcp_session *incoming_session, tcp_session *outc
 	incoming_session->when_disconnect(empty_tcp_disconnect);
 	if (tcp_sessions.find(outcoming_session) != tcp_sessions.end())
 	{
-		outcoming_session->socket().close();
+		asio::error_code ec;
+		outcoming_session->socket().shutdown(asio::socket_base::shutdown_both, ec);
 	}
 	incoming_session->replace_callback(empty_tcp_callback);
 	incoming_session->stop();
